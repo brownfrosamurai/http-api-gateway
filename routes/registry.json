@@ -1,11 +1,33 @@
 {
   "services": {
     "testapi": {
-      "apiName": "testapi",
-      "protocol": "http",
-      "host": "localhost",
-      "port": 8080,
-      "url": "http://localhost:8080/"
+      "instances": [
+        {
+          "apiName": "testapi",
+          "protocol": "http",
+          "host": "localhost",
+          "port": 3006,
+          "url": "http://localhost:3006/"
+        },
+        {
+          "apiName": "testapi",
+          "protocol": "http",
+          "host": "localhost",
+          "port": 8080,
+          "url": "http://localhost:8080/"
+        }
+      ]
+    },
+    "registerapi": {
+      "instances": [
+        {
+          "apiName": "registerapi",
+          "protocol": "http",
+          "host": "localhost",
+          "port": 3006,
+          "url": "http://localhost:3006/"
+        }
+      ]
     }
   }
 }
