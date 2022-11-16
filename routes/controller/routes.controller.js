@@ -2,7 +2,7 @@ const axios = require('axios')
 const registry = require('../registry.json')
 const fs = require('fs')
 const { apiInstanceExists } = require('../utils/routes.utils')
-const { response } = require('express')
+const loadbalancer = require('../../loadbalancer/loadbalancer')
 
 /**
  * @route (GET '/:apiName/:path')
@@ -11,20 +11,37 @@ const { response } = require('express')
  * @param {*} next 
  */
 const get_RegisteredInstance = async (req, res, next) => {
+  const service = registry.services[req.params.apiName]
+  
   try {
-    if (registry.services[req.params.apiName]) {
+    if (service) {
+      // create loadbalancer strategy 
+      if (!service.loadbalanceStrategy) {
+        service.loadbalanceStrategy = "ROUND_ROBIN"
+        fs.writeFile('./routes/registry.json', JSON.stringify(registry), (err) => {
+          if(err) {
+            console.log(err)
+            res.send(`Could not update registry \n ${err}`)
+          }
+        })
+      }
+
+      // create next index 
+      const newIndex = loadbalancer[service.loadbalanceStrategy](service)
+      const url = service.instances[newIndex].url
+
+      // send axios call to api instance 
       const response = await axios({
         method: req.method,
-        url: registry.services[req.params.apiName].url + req.params.path,
+        url: url + req.params.path,
         headers: req.headers,
         data: req.body
       })
 
       res.send(response.data)
     }
-    else res.send(`Api at ${req.params.apiName} does not exist`)
-
   } catch (error) {
+    console.log(error)
     res.send(`An error occurred`)
   }
 }
@@ -39,6 +56,7 @@ const post_RegisterInstance = (req, res, next) => {
   try {
     const registrationInfo = req.body
 
+    // create url 
     registrationInfo.url = `${registrationInfo.protocol}://${registrationInfo.host}:${registrationInfo.port}/`
 
     if (apiInstanceExists(registrationInfo)) {
@@ -49,8 +67,14 @@ const post_RegisterInstance = (req, res, next) => {
         registry.services[registrationInfo.apiName].instances = []
       }
 
+      if (registry.services[registrationInfo.apiName].index == undefined) {
+        registry.services[registrationInfo.apiName].index = 0
+      }
+
+      // update instances with new instance 
       registry.services[registrationInfo.apiName].instances.push({ ...registrationInfo })
 
+      // update registry json file
       fs.writeFile('./routes/registry.json', JSON.stringify(registry), (err) => {
         if (err) {
           res.send(`Could not register ${registrationInfo.apiName}: \n ${err}`)
@@ -76,19 +100,23 @@ const post_UnregisterInstance = (req, res, next) => {
   try {
     const registrationInfo = req.body
 
+    // create url 
     registrationInfo.url = `${registrationInfo.protocol}://${registrationInfo.host}:${registrationInfo.port}/`
 
+    // validate api existence 
     if (apiInstanceExists(registrationInfo)) {
       const index = registry.services[registrationInfo.apiName].instances
         .findIndex(instance => {
           instance.url === registrationInfo.url
         })
 
+      // remove api instance 
       registry.services[registrationInfo.apiName].instances.splice(index, 1)
 
       if (registry.services[registrationInfo.apiName].instances.length < 1) {
         registry.services[registrationInfo.apiName] = undefined
       }
+      // update registry json file 
       fs.writeFile('./routes/registry.json', JSON.stringify(registry), (err) => {
         if (err) {
           res.send(`Could not register ${registrationInfo.apiName}: \n ${err}`)
