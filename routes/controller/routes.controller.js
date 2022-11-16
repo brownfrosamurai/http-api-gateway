@@ -4,7 +4,13 @@ const fs = require('fs')
 const { apiInstanceExists } = require('../utils/routes.utils')
 const { response } = require('express')
 
-const get_RegisteredInstance = async (req, res) => {
+/**
+ * @route (GET '/:apiName/:path')
+ * @param {*} req 
+ * @param {*} res 
+ * @param {*} next 
+ */
+const get_RegisteredInstance = async (req, res, next) => {
   try {
     if (registry.services[req.params.apiName]) {
       const response = await axios({
@@ -23,6 +29,12 @@ const get_RegisteredInstance = async (req, res) => {
   }
 }
 
+/**
+ * @route (POST '/register')
+ * @param {*} req 
+ * @param {*} res 
+ * @param {*} next 
+ */
 const post_RegisterInstance = (req, res, next) => {
   try {
     const registrationInfo = req.body
@@ -54,6 +66,12 @@ const post_RegisterInstance = (req, res, next) => {
   }
 }
 
+/**
+ * @route (POST '/unregister')
+ * @param {*} req 
+ * @param {*} res 
+ * @param {*} next 
+ */
 const post_UnregisterInstance = (req, res, next) => {
   try {
     const registrationInfo = req.body
@@ -68,7 +86,7 @@ const post_UnregisterInstance = (req, res, next) => {
 
       registry.services[registrationInfo.apiName].instances.splice(index, 1)
 
-      if(registry.services[registrationInfo.apiName].instances.length < 1){
+      if (registry.services[registrationInfo.apiName].instances.length < 1) {
         registry.services[registrationInfo.apiName] = undefined
       }
       fs.writeFile('./routes/registry.json', JSON.stringify(registry), (err) => {
