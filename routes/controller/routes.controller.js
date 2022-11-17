@@ -4,22 +4,59 @@ const fs = require('fs')
 const { apiInstanceExists } = require('../utils/routes.utils')
 const loadbalancer = require('../../loadbalancer/loadbalancer')
 
+
+/**
+ * @route (POST '/enable/:apiName')
+ * @param {*} req 
+ * @param {*} res 
+ * @param {*} next 
+ */
+const post_ToggleApiInstance = (req, res, next) => {
+  try {
+    console.log(req.params.apiName)
+    const requestBody = req.body
+    const apiName = req.params.apiName
+    const instances = registry.services[apiName].instances
+
+    // Check for existence of url 
+    const index = instances
+        .findIndex(instance =>
+          instance.url === requestBody.url
+        );
+    if (index < 0) {
+      res.send(`Configuration for ${apiName} does not exist at ${requestBody.url}`)
+    } else {
+      instances[index].enabled = requestBody.enabled
+
+      fs.writeFile('./routes/registry.json', JSON.stringify(registry), (err) => {
+        if (err) {
+          res.send(`Could not enable/disable ${apiName} at ${requestBody.url}: ${err}`)
+        } else {
+          res.send(`Successfully enable/disable instance of ${apiName} at ${requestBody.url}`)
+        }
+      })
+    }
+  } catch (error) {
+    console.log(error)
+    res.send('An error occured')
+  }
+}
 /**
  * @route (GET '/:apiName/:path')
  * @param {*} req 
  * @param {*} res 
  * @param {*} next 
  */
-const get_RegisteredInstance = async (req, res, next) => {
+const get_ApiInstance = async (req, res, next) => {
   const service = registry.services[req.params.apiName]
-  
+
   try {
     if (service) {
       // create loadbalancer strategy 
       if (!service.loadbalanceStrategy) {
         service.loadbalanceStrategy = "ROUND_ROBIN"
         fs.writeFile('./routes/registry.json', JSON.stringify(registry), (err) => {
-          if(err) {
+          if (err) {
             console.log(err)
             res.send(`Could not update registry \n ${err}`)
           }
@@ -52,7 +89,7 @@ const get_RegisteredInstance = async (req, res, next) => {
  * @param {*} res 
  * @param {*} next 
  */
-const post_RegisterInstance = (req, res, next) => {
+const post_RegisterApiInstance = (req, res, next) => {
   try {
     const registrationInfo = req.body
 
@@ -96,7 +133,7 @@ const post_RegisterInstance = (req, res, next) => {
  * @param {*} res 
  * @param {*} next 
  */
-const post_UnregisterInstance = (req, res, next) => {
+const post_UnregisterApiInstance = (req, res, next) => {
   try {
     const registrationInfo = req.body
 
@@ -136,7 +173,8 @@ const post_UnregisterInstance = (req, res, next) => {
 
 
 module.exports = {
-  get_RegisteredInstance,
-  post_RegisterInstance,
-  post_UnregisterInstance
+  post_ToggleApiInstance,
+  get_ApiInstance,
+  post_RegisterApiInstance,
+  post_UnregisterApiInstance
 }

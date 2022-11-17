@@ -17,7 +17,7 @@ app.post('/bogusApi', (req, res, next) => {
 });
 
 
-app.listen(8040, async () => {
+app.listen(PORT, async () => {
   const response = await axios({
     method: "POST",
     url: `http://localhost:8000/register`,
@@ -29,5 +29,5 @@ app.listen(8040, async () => {
       port: PORT,
     }
   })
-  console.log(`Fake server running on port 8040 !!!`)
+  console.log(`Fake server running on port ${PORT}!!!`)
 });
