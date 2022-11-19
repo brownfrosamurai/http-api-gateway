@@ -12,10 +12,9 @@ app.get('/fakeapi', (req, res, next) => {
   res.send('GET Fake api says hello' + '\n')
 });
 
-app.post('/bogusApi', (req, res, next) => {
-  res.send('POST bogusApi says hello ' + '\n')
-});
-
+app.post('/bogusapi', (req, res) => {
+  res.send(`POST Bogus API says hello \n`)
+})
 
 app.listen(PORT, async () => {
   const response = await axios({
@@ -23,11 +22,12 @@ app.listen(PORT, async () => {
     url: `http://localhost:8000/register`,
     headers: { 'Content-Type': 'application/json' },
     data: {
-      apiName: "testapi",
+      apiName: "newapi",
       protocol: "http",
       host: HOST,
-      port: PORT,
+      port: PORT
     }
   })
+  console.log(response.data)
   console.log(`Fake server running on port ${PORT}!!!`)
 });
