@@ -1,9 +1,10 @@
+const fs = require('fs')
 const axios = require('axios')
 const registry = require('../registry.json')
-const fs = require('fs')
-const { apiInstanceExists } = require('../utils/routes.utils')
-const loadbalancer = require('../../loadbalancer/loadbalancer')
-
+const loadbalancer = require('../utils/loadBalancer')
+const {
+  apiInstanceExists
+} = require('../services/routes.service')
 
 /**
  * @route (POST '/enable/:apiName')
@@ -13,22 +14,21 @@ const loadbalancer = require('../../loadbalancer/loadbalancer')
  */
 const post_ToggleApiInstance = (req, res, next) => {
   try {
-    console.log(req.params.apiName)
     const requestBody = req.body
     const apiName = req.params.apiName
     const instances = registry.services[apiName].instances
 
     // Check for existence of url 
     const index = instances
-        .findIndex(instance =>
-          instance.url === requestBody.url
-        );
+      .findIndex(instance =>
+        instance.url === requestBody.url
+      );
     if (index < 0) {
       res.send(`Configuration for ${apiName} does not exist at ${requestBody.url}`)
     } else {
       instances[index].enabled = requestBody.enabled
 
-      fs.writeFile('./routes/registry.json', JSON.stringify(registry), (err) => {
+      fs.writeFile('./registry.json', JSON.stringify(registry), (err) => {
         if (err) {
           res.send(`Could not enable/disable ${apiName} at ${requestBody.url}: ${err}`)
         } else {
@@ -38,9 +38,10 @@ const post_ToggleApiInstance = (req, res, next) => {
     }
   } catch (error) {
     console.log(error)
-    res.send('An error occured')
+    res.send('An error occured while toggle API instance')
   }
 }
+
 /**
  * @route (GET '/:apiName/:path')
  * @param {*} req 
@@ -49,15 +50,13 @@ const post_ToggleApiInstance = (req, res, next) => {
  */
 const get_ApiInstance = async (req, res, next) => {
   const service = registry.services[req.params.apiName]
-
   try {
     if (service) {
       // create loadbalancer strategy 
       if (!service.loadbalanceStrategy) {
         service.loadbalanceStrategy = "ROUND_ROBIN"
-        fs.writeFile('./routes/registry.json', JSON.stringify(registry), (err) => {
+        fs.writeFile('./registry.json', JSON.stringify(registry), (err) => {
           if (err) {
-            console.log(err)
             res.send(`Could not update registry \n ${err}`)
           }
         })
@@ -65,8 +64,10 @@ const get_ApiInstance = async (req, res, next) => {
 
       // create next index 
       const newIndex = loadbalancer[service.loadbalanceStrategy](service)
+      console.log(newIndex)
       const url = service.instances[newIndex].url
-
+      console.log(req.method)
+      console.log(url + req.params.path)
       // send axios call to api instance 
       const response = await axios({
         method: req.method,
@@ -74,12 +75,13 @@ const get_ApiInstance = async (req, res, next) => {
         headers: req.headers,
         data: req.body
       })
+      console.log(response.data)
 
       res.send(response.data)
     }
   } catch (error) {
-    console.log(error)
-    res.send(`An error occurred`)
+    console.log(error.stack)
+    res.send('An error occured while fetching API instance')
   }
 }
 
@@ -96,6 +98,8 @@ const post_RegisterApiInstance = (req, res, next) => {
     // create url 
     registrationInfo.url = `${registrationInfo.protocol}://${registrationInfo.host}:${registrationInfo.port}/`
 
+    registrationInfo.enabled = true
+
     if (apiInstanceExists(registrationInfo)) {
       res.send(`An instance of ${registrationInfo.apiName} exists at ${registrationInfo.url}`)
     } else {
@@ -111,19 +115,20 @@ const post_RegisterApiInstance = (req, res, next) => {
       // update instances with new instance 
       registry.services[registrationInfo.apiName].instances.push({ ...registrationInfo })
 
+      console.log(registry.services[registrationInfo.apiName].instances)
+
       // update registry json file
-      fs.writeFile('./routes/registry.json', JSON.stringify(registry), (err) => {
+      fs.writeFile('./registry.json', JSON.stringify(registry), (err) => {
         if (err) {
           res.send(`Could not register ${registrationInfo.apiName}: \n ${err}`)
         } else {
-          console.log(registrationInfo)
           res.send(`Successfully registered ${registrationInfo.apiName}`)
         }
       })
     }
   } catch (error) {
     console.log(error)
-    res.send(`An error occurred while registering`)
+    res.send('An error occured while registering api instance')
   }
 }
 
@@ -154,7 +159,7 @@ const post_UnregisterApiInstance = (req, res, next) => {
         registry.services[registrationInfo.apiName] = undefined
       }
       // update registry json file 
-      fs.writeFile('./routes/registry.json', JSON.stringify(registry), (err) => {
+      fs.writeFile('./registry.json', JSON.stringify(registry), (err) => {
         if (err) {
           res.send(`Could not register ${registrationInfo.apiName}: \n ${err}`)
         } else {
@@ -167,7 +172,7 @@ const post_UnregisterApiInstance = (req, res, next) => {
     }
   } catch (error) {
     console.log(error)
-    res.send('An error occured')
+    res.send('An error occured while unregistering api instance')
   }
 }
 

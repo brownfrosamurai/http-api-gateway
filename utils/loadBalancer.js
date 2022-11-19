@@ -1,8 +1,8 @@
 const loadbalancer = {}
 
 loadbalancer.ROUND_ROBIN = (service) => {
-  const index = ++service.index >= service.instances.length ? 0 : service.index
-  service.index = index
+  const newIndex = ++service.index >= service.instances.length ? 0 : service.index
+  service.index = newIndex
   return loadbalancer.isEnabled(service, newIndex, loadbalancer.ROUND_ROBIN)
 }
 

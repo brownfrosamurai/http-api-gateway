@@ -5,7 +5,7 @@ const {
   post_RegisterApiInstance,
   post_UnregisterApiInstance,
   post_ToggleApiInstance
-} = require('./controller/routes.controller')
+} = require('../controller')
 
 const Router = express.Router()
 

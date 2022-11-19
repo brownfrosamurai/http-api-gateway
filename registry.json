@@ -1,0 +1,53 @@
+{
+  "services": {
+    "testapi": {
+      "instances": [
+        {
+          "apiName": "testapi",
+          "protocol": "http",
+          "host": "localhost",
+          "port": 8080,
+          "url": "http://localhost:8080/",
+          "enabled": true
+        },
+        {
+          "apiName": "testapi",
+          "protocol": "http",
+          "host": "localhost",
+          "port": 8040,
+          "url": "http://localhost:8040/",
+          "enabled": true
+        }
+      ],
+      "index": 0,
+      "loadbalanceStrategy": "ROUND_ROBIN"
+    },
+    "newapi": {
+      "instances": [
+        {
+          "apiName": "newapi",
+          "protocol": "http",
+          "host": "localhost",
+          "port": 8080,
+          "url": "http://localhost:8080/",
+          "enabled": true
+        }
+      ],
+      "index": 0,
+      "loadbalanceStrategy": "ROUND_ROBIN"
+    },
+    "keen": {
+      "instances": [
+        {
+          "apiName": "keen",
+          "protocol": "http",
+          "host": "localhost",
+          "port": 3006,
+          "url": "http://localhost:3006/",
+          "enabled": true
+        }
+      ],
+      "index": 0
+    }
+  }
+}
